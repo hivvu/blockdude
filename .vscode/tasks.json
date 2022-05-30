@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build ROM",
+            "type": "shell",
+            "osx": {
+                "command": "./Resources/gbdk-mac/bin/lcc -o ./dist/blockdude.gb main.c"
+            },
+            "windows": {
+                "command": ".\\Resources\\gbdk-win\\bin\\lcc -o .\\dist\\blockdude.gb main.c"
+            },
+            "problemMatcher": [
+                "$msCompile",
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+# Ignore composer generated paths
+/Resources/emu-gbg/*
+
+# Packages #
+############
+*.7z
+*.dmg
+*.gz
+*.bz2
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+*.tgz
