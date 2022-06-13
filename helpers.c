@@ -49,6 +49,13 @@ void loadWinScreen()
     set_sprite_tile(1, 0); // Clear player sprite
 }
 
+void performantdelay(UINT8 numloops){
+    UINT8 i;
+    for(i = 0; i < numloops; i++){
+        wait_vbl_done();
+    }     
+}
+
 UBYTE checkTileIndexXaxis(UINT8 posX)
 {
     return (posX - 8) / 8;
@@ -265,5 +272,6 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth)
         printf("MapWidth: %u\n", (UINT8)(mapWidth));
         printf("ArrayIndex: %u\n", (UINT16)(tileindexTL));
     }
-    delay(100);
+    
+    performantdelay(6);
 }
