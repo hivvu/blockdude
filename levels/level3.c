@@ -1,7 +1,8 @@
 #define level3Width 25
 #define level3Height 14
+#define level3MapLength 350
  
-unsigned char level3map[] =
+unsigned char level3Map[] =
 {
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x03,0x00,0x00,
   0x00,0x00,0x00,0x00,0x00,0x00,0x03,0x00,0x00,0x03,
@@ -42,22 +43,27 @@ unsigned char level3map[] =
 
 
 void initLevel3(){
-    gamerunning = 1;
-    // player[0] = 152;
-    // player[1] = 72;
+  nextLevel = 4;
+  gamerunning = 1;
+  player[0] = 144;
+  player[1] = 88;
+
+  init();
+
+  //Create temporary level array
+  UINT16 mapLevel[level3MapLength];
+
+  // Copy level map to a temp array that will be used in game
+  // The original map need to be unchanged so we can reset the level    
+  memcpy(mapLevel, level3Map, level3MapLength);
     
-    player[0] = 144;
-    player[1] = 88;
+  // Load map 
+  set_bkg_tiles(0, 0, level3Width, level3Height, mapLevel); // Load Level
 
-    init();
-
-    // move_bkg(-16,0); // Center the player on screen
-    set_bkg_tiles(0, 0, level3Width, level3Height, level3map); // Load Level
-
-    while (gamerunning)
-    {
-        checkInput(level3map, level3Width);     // Check for user input (and act on it)
-        updateSwitches();      // Make sure the SHOW_SPRITES and SHOW_BKG switches are on each loop
-        wait_vbl_done();       // Wait until VBLANK to avoid corrupting memory
-    }
+  while (gamerunning)
+  {
+      checkInput(mapLevel, level3Width); // Check for user input (and act on it)
+      updateSwitches(); // Make sure the SHOW_SPRITES and SHOW_BKG switches are on each loop
+      wait_vbl_done(); // Wait until VBLANK to avoid corrupting memory
+  }
 }

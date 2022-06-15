@@ -37,15 +37,18 @@ The Up key will allow Block Dude to climb up a block or brick that he is current
 
 [ ]  Welcome screen
 [ ]  Menu screen
-[*]  Create tiles
-[*]  Load tiles
-[*]  Change sprint when changing direction
-[*]  Colission with wall
-[*]  Colission and pickup block
-[*]  Stand up on blocks and walls
-[*]  Fall until collision
-[*]  Don't let pickup block when other is on top
-[*]  Drop box until collision
-[*]  Change level
+[x]  Create tiles
+[x]  Load tiles
+[x]  Change sprint when changing direction
+[x]  Colission with wall
+[x]  Colission and pickup block
+[x]  Stand up on blocks and walls
+[x]  Fall until collision
+[x]  Don't let pickup block when other is on top
+[x]  Drop box until collision
+[x]  Change level
 [ ]  Win screen
+[x]  Load bigger level maps
+[ ]  Reset level
 [ ]  Scrolling map for bigger levels
+[ ]  Password level system

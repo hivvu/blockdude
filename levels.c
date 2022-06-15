@@ -5,7 +5,6 @@
 #include "splashscreen.c"
 
 void loadLevel(UINT8 levelNum){
-    
     // splashScreen();
     
     while (1) {
@@ -21,7 +20,9 @@ void loadLevel(UINT8 levelNum){
             break;
         }
 
-        levelNum += 1;
+        // Current level variable is only update on the start of each level
+        // Useful for the reset system, that breaks the loop
+        levelNum = nextLevel;
     }
     
     loadWinScreen();

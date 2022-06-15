@@ -1,14 +1,14 @@
 #include "sprites/BackgroundTileSet.c"
 #include "sprites/BlankScreen.c"
+#include <string.h> 
 
 // Set variables
-UINT8 startLevel = 3;
+UINT8 startLevel = 1;
 
 const unsigned char blankmap[1] = {0x00};
 const unsigned char blockTile[1] = {0x04};
 const unsigned char doorTile[1] = {0x05};
-const unsigned char wallTile[1] = {0x03};
-UBYTE haskey, gamerunning = 1, facingLeft, holdingBlock;
+UBYTE nextLevel, haskey, gamerunning = 1, facingLeft, holdingBlock, debug = 0;
 UINT8 player[2]; // The player array will hold the player's position as X ([0]) and Y ([1])
 
 void init()
@@ -130,6 +130,37 @@ void blockFollowPlayer(UINT8 fromPlayerPosX, UINT8 fromPlayerPosY, UINT8 toPlaye
     }
 }
 
+void dropBox(UINT8 posX, unsigned char gameMap[], UINT8 mapWidth){
+    UINT8 indexTLx, curplayerx, indexTLy;
+
+    curplayerx = checkTileIndexXaxis(player[0]);
+    indexTLy = player[1];
+
+    set_bkg_tiles(curplayerx, checkTileIndexYaxis(indexTLy) - 1, 1, 1, blankmap);
+
+    while (movePlayer(indexTLx, indexTLy + 8, gameMap, mapWidth))
+    {
+        indexTLy += 8;
+    }
+
+    indexTLx = checkTileIndexXaxis(posX);
+    indexTLy = checkTileIndexYaxis(indexTLy);
+
+    // Calculate the index in the array of tiles
+    UINT16 tileindexTL = mapWidth * indexTLy + indexTLx;
+
+    gameMap[tileindexTL] = blockTile[0];                // add block to the map array
+    set_bkg_tiles(indexTLx, indexTLy, 1, 1, blockTile); // add block to the screen
+    holdingBlock = 0; 
+}
+
+UBYTE resetLevel()
+{   
+    nextLevel -= 1;
+    gamerunning = 0; // break the while loop
+    return 1;
+}
+
 void checkInput(unsigned char gameMap[], UINT8 mapWidth)
 {
     if (joypad() & J_LEFT)
@@ -221,56 +252,33 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth)
     }
     else if (joypad() & J_DOWN) // pickup and drop block
     {
-
-        if (holdingBlock == 0)
-        {
+        if (holdingBlock == 0){
+            // Not holding a block, lets pick it
             if (facingLeft == TRUE) {
                 pickupBox(player[0] - 8, player[1], player[0], gameMap, mapWidth);
             } else {
                 pickupBox(player[0] + 8, player[1], player[0], gameMap, mapWidth);
             }
         } else {
-            // its holding a block
-
-            UINT8 indexTLx, curplayerx, indexTLy;
-
+            // its holding a block, lets drop it
             // check position and if space on the right is empty
-            if (facingLeft == TRUE & movePlayer(player[0] - 8, player[1], gameMap, mapWidth))
-            {
-                indexTLx = player[0] - 8;
+            if (facingLeft == TRUE & movePlayer(player[0] - 8, player[1], gameMap, mapWidth)){
+                dropBox(player[0] - 8, gameMap, mapWidth);
+            } else if (facingLeft == FALSE & movePlayer(player[0] + 8, player[1], gameMap, mapWidth)) {
+                dropBox(player[0] + 8, gameMap, mapWidth);
             }
-            else if (facingLeft == FALSE & movePlayer(player[0] + 8, player[1], gameMap, mapWidth))
-            {
-                indexTLx = player[0] + 8;
-            }
-
-            curplayerx = checkTileIndexXaxis(player[0]);
-            indexTLy = player[1];
-
-            set_bkg_tiles(curplayerx, checkTileIndexYaxis(indexTLy) - 1, 1, 1, blankmap);
-
-            while (movePlayer(indexTLx, indexTLy + 8, gameMap, mapWidth))
-            {
-                indexTLy += 8;
-            }
-
-            indexTLx = checkTileIndexXaxis(indexTLx);
-            indexTLy = checkTileIndexYaxis(indexTLy);
-
-            // Calculate the index in the array of tiles
-            UINT16 tileindexTL = mapWidth * indexTLy + indexTLx;
-
-            gameMap[tileindexTL] = blockTile[0];                // add block to the map array
-            set_bkg_tiles(indexTLx, indexTLy, 1, 1, blockTile); // add block to the screen
-            holdingBlock = 0;                                   // set flag as false
         }
-    } else if (joypad() & J_SELECT) {
+    } else if (joypad() & J_SELECT) { // reset level or debug info
         //DEBUG 
-        UINT16 tileindexTL = mapWidth * checkTileIndexYaxis(player[1]) + checkTileIndexXaxis(player[0]);
+        if (debug == 1){
+            UINT16 tileindexTL = mapWidth * checkTileIndexYaxis(player[1]) + checkTileIndexXaxis(player[0]);
 
-        printf("PosX:%u, PosY:%u\n",(UINT8)(checkTileIndexXaxis(player[0])),(UINT8)(checkTileIndexYaxis(player[1])));
-        printf("MapWidth: %u\n", (UINT8)(mapWidth));
-        printf("ArrayIndex: %u\n", (UINT16)(tileindexTL));
+            // printf("PosX:%u, PosY:%u\n",(UINT8)(checkTileIndexXaxis(player[0])),(UINT8)(checkTileIndexYaxis(player[1])));
+            // printf("MapWidth: %u\n", (UINT8)(mapWidth));
+            // printf("ArrayIndex: %u\n", (UINT16)(tileindexTL));
+        } else {
+            resetLevel();
+        }
     }
     
     performantdelay(6);
