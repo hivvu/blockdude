@@ -138,7 +138,7 @@ void dropBox(UINT8 posX, unsigned char gameMap[], UINT8 mapWidth){
 
     set_bkg_tiles(curplayerx, checkTileIndexYaxis(indexTLy) - 1, 1, 1, blankmap);
 
-    while (movePlayer(indexTLx, indexTLy + 8, gameMap, mapWidth))
+    while (movePlayer(posX, indexTLy + 8, gameMap, mapWidth))
     {
         indexTLy += 8;
     }
