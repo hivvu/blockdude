@@ -5,7 +5,7 @@
 #include "splashscreen.c"
 
 void loadLevel(UINT8 levelNum){
-    // splashScreen();
+    splashScreen();
     
     while (1) {
         if (levelNum == 1){

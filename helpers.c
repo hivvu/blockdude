@@ -8,7 +8,7 @@ UINT8 startLevel = 1;
 const unsigned char blankmap[1] = {0x00};
 const unsigned char blockTile[1] = {0x04};
 const unsigned char doorTile[1] = {0x05};
-UBYTE nextLevel, haskey, gamerunning = 1, facingLeft, holdingBlock, debug = 0;
+UBYTE nextLevel, gamerunning = 1, facingLeft, holdingBlock, debug = 0;
 UINT8 player[2]; // The player array will hold the player's position as X ([0]) and Y ([1])
 
 void init()
@@ -184,14 +184,17 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth)
                 posY += 8;
             }
 
-            // if (checkTileIndexXaxis(player[0]) <= 9 && mapWidth > 20){
-            //     move_bkg(-8,0);
+            // if (checkTileIndexXaxis(player[0]) <= 7 && mapWidth > 20){
+            //     scroll_bkg(-8,0);
+            //     // move_sprite(1, player[0] - 8, player[1]);
             // } else {
-            move_sprite(1, player[0] - 8, player[1]);
+            //     move_sprite(1, player[0] - 8, player[1]);
+            //     player[0] = posX;
             // }
 
-            // update player position
+            move_sprite(1, player[0] - 8, player[1]);
             player[0] = posX;
+
             blockFollowPlayer(player[0], player[1], posX, posY);
         }
     }
@@ -214,12 +217,23 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth)
                 posY += 8;
             }
 
-            // if (checkTileIndexXaxis(player[0]) >= 9 && mapWidth > 20){
-            //     move_bkg(8,0);
+            
+            // UINT8 diffWidth = mapWidth - 20; //screensize
+            // UINT8 timesScrolled = diffWidth; 
+
+            // if (checkTileIndexXaxis(player[0]) >= 10 && mapWidth > 20){
+            //     if (timesScrolled != diffWidth){
+            //         scroll_bkg(8,0);
+            //         timesScrolled++;
+
+            //     }
+            //     // move_sprite(1, player[0] + 8, player[1]);
             // } else {
-            move_sprite(1, player[0] + 8, player[1]);
+            //     move_sprite(1, player[0] + 8, player[1]);
+            //     player[0] = posX;
             // }
 
+            move_sprite(1, player[0] + 8, player[1]);
             player[0] = posX;
 
             blockFollowPlayer(player[0], player[1], posX, posY);
