@@ -1,13 +1,13 @@
 /*
 
- LEVEL3.H
+ LEVEL0.H
 
  Map Include File.
 
  Info:
    Section       : 
    Bank          : 0
-   Map size      : 25 x 14
+   Map size      : 20 x 14
    Tile set      : C:\Users\ivpereira\Downloads\gbtb\blockdude-tiles.gbr
    Plane count   : 1 plane (8 bits)
    Plane order   : Tiles are continues
@@ -18,10 +18,10 @@
 
 */
 
-#define level3Width 19
-#define level3Height 11
-#define level3Bank 0
+#define Level1Width 24
+#define Level1Height 14
+#define Level1Bank 0
 
-extern unsigned char level3[];
+extern unsigned char Level0[];
 
-/* End of LEVEL3.H */
+/* End of LEVEL0.H */
