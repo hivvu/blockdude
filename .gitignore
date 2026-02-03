@@ -1,6 +1,25 @@
 # Ignore composer generated paths
 /Resources/emu-gbg/*
 
+# Build artifacts #
+###################
+*.asm
+*.lst
+*.o
+*.sym
+*.map
+*.noi
+*.ihx
+
+# Debug files
+dist/*.map
+dist/*.noi
+dist/*.ihx
+
+# IDE/Editor
+.vscode/
+.claude/
+
 # Packages #
 ############
 *.7z

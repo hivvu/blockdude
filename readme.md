@@ -69,8 +69,8 @@ run like this:
 
 ## Developed features
 
-[ ]  Welcome screen
-[ ]  Menu screen
+[x]  Welcome screen
+[x]  Menu screen
 [x]  Create tiles
 [x]  Load tiles
 [x]  Change sprint when changing direction
@@ -83,13 +83,13 @@ run like this:
 [x]  Change level
 [ ]  Win screen
 [x]  Load bigger level maps
-[ ]  Reset level
+[x]  Reset level
 [ ]  Add sound
-[ ]  Scrolling map for bigger levels 
+[x]  Scrolling map for bigger levels
 [ ]  Password level system
 [ ]  easter eggs / Konami code
 [ ]  cheat codes
-[ ]  credits
-[ ]  instructions
+[x]  credits
+[x]  instructions
 [ ]  heads up display (window layer)
 
