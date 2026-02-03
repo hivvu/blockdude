@@ -48,6 +48,7 @@ void loadLevel(UINT8 levelNum){
         // Useful for the reset system, that breaks the loop
         levelNum = nextLevel;
     }
-    
-    loadWinScreen();
+
+    // Return to splash screen after completing all levels
+    loadLevel(1);
 }
