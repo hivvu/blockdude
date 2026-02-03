@@ -1,3 +1,9 @@
+#include "levels.h"
+#include "logic.h"
+#include "splashscreen.h"
+#include <string.h>
+
+// Include level map data
 #include "levels/level1.c"
 #include "levels/level2.c"
 #include "levels/level3.c"
@@ -9,43 +15,80 @@
 #include "levels/level9.c"
 #include "levels/level10.c"
 #include "levels/level11.c"
-#include "splashscreen.c"
 
-void loadLevel(UINT8 levelNum){
+// Level configuration data
+static const LevelData levels[TOTAL_LEVELS] = {
+    // Level 1
+    { level1Map, level1Width, level1Height, level1MapLength, 128, 96, 0 },
+    // Level 2
+    { level2Map, level2Width, level2Height, level2MapLength, 144, 96, 0 },
+    // Level 3
+    { level3Map, level3Width, level3Height, level3MapLength, 80, 64, 0 },
+    // Level 4
+    { level4map, level4Width, level4Height, level4MapLength, 144, 72, 0 },
+    // Level 5
+    { level5Map, level5Width, level5Height, level5MapLength, 104, 80, 0 },
+    // Level 6
+    { level6Map, level6Width, level6Height, level6MapLength, 112, 72, 0 },
+    // Level 7
+    { level7Map, level7Width, level7Height, level7MapLength, 144, 88, 0 },
+    // Level 8
+    { level8Map, level8Width, level8Height, level8MapLength, 168, 128, 0 },
+    // Level 9
+    { level9Map, level9Width, level9Height, level9MapLength, 120, 72, 0 },
+    // Level 10
+    { level10Map, level10Width, level10Height, level10MapLength, 120, 96, 0 },
+    // Level 11 (has scroll offset)
+    { level11Map, level11Width, level11Height, level11MapLength, 112, 48, 4 }
+};
+
+// Maximum level size buffer (level 11 is largest at 551)
+#define MAX_LEVEL_SIZE 560
+static unsigned char mapLevel[MAX_LEVEL_SIZE];
+
+// Run a single level
+void runLevel(const LevelData* level, UINT8 nextLevelNum) {
+    nextLevel = nextLevelNum;
+    gamerunning = 1;
+
+    player[0] = level->playerStartX;
+    player[1] = level->playerStartY;
+
+    init();
+
+    // Copy level map to working buffer
+    memcpy(mapLevel, level->map, level->mapLength);
+
+    set_bkg_tiles(0, 0, level->width, level->height, mapLevel);
+
+    // Handle vertical scroll for tall levels
+    if (level->scrollYOffset > 0) {
+        scrollY = level->scrollYOffset;
+        move_bkg(0, scrollY);
+        movePlayerSprite(player[0], player[1]);
+    }
+
+    while (gamerunning) {
+        checkInput(mapLevel, level->width);
+        updateSwitches();
+        wait_vbl_done();
+    }
+
+    // Reset scroll for next level
+    if (level->scrollYOffset > 0) {
+        scrollY = 0;
+        move_bkg(0, 0);
+    }
+}
+
+// Main level loading function
+void loadLevel(UINT8 levelNum) {
     splashScreen();
 
-    // Use startLevel from menu selection (levels 1-11)
     levelNum = startLevel;
 
-    while (1) {
-        if (levelNum == 1){
-            initLevel1();
-        } else if (levelNum == 2){
-            initLevel2();
-        } else if (levelNum == 3){
-            initLevel3();
-        } else if (levelNum == 4){
-            initLevel4();
-        } else if (levelNum == 5){
-            initLevel5();
-        } else if (levelNum == 6){
-            initLevel6();
-        } else if (levelNum == 7){
-            initLevel7();
-        } else if (levelNum == 8){
-            initLevel8();
-        } else if (levelNum == 9){
-            initLevel9();
-        } else if (levelNum == 10){
-            initLevel10();
-        } else if (levelNum == 11){
-            initLevel11();
-        } else {
-            break;
-        }
-
-        // Current level variable is only update on the start of each level
-        // Useful for the reset system, that breaks the loop
+    while (levelNum >= 1 && levelNum <= TOTAL_LEVELS) {
+        runLevel(&levels[levelNum - 1], levelNum + 1);
         levelNum = nextLevel;
     }
 

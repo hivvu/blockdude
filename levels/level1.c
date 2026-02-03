@@ -18,30 +18,3 @@ unsigned char level1Map[] = {
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
-
-void initLevel1(){
-    nextLevel = 2;
-    gamerunning = 1;
-
-    player[0] = 128;
-    player[1] = 96;
-
-    init();
-
-    //Create temporary level array
-    UINT16 mapLevel[level1MapLength];
-
-    // Copy level map to a temp array that will be used in game
-    // The original map need to be unchanged so we can reset the level    
-    memcpy(mapLevel, level1Map, level1MapLength);
-     
-    // Load map 
-    set_bkg_tiles(0, 0, level1Width, level1Height, mapLevel); // Load Level
-
-    while (gamerunning)
-    {
-        checkInput(mapLevel, level1Width); // Check for user input (and act on it)
-        updateSwitches(); // Make sure the SHOW_SPRITES and SHOW_BKG switches are on each loop
-        wait_vbl_done(); // Wait until VBLANK to avoid corrupting memory
-    }
-}

@@ -1,3 +1,4 @@
+#include "logic.h"
 #include "sprites/BackgroundTileSet.c"
 #include "sprites/BlankScreen.c"
 #include <string.h>
@@ -5,90 +6,74 @@
 #include <gbdk/console.h>
 #include "audio.h"
 
-// Tiles
-const unsigned char blankmap[1] = {0x00};
-const unsigned char blockTile[1] = {0x04};
-const unsigned char doorTile[1] = {0x05};
+// Tile arrays
+const unsigned char blankmap[1] = {TILE_BLANK};
+const unsigned char blockTile[1] = {TILE_BLOCK};
+const unsigned char doorTile[1] = {TILE_DOOR};
 
-// Set variables
+// Global variables
 UINT8 startLevel = 1;
-UBYTE debug = 0;
-UBYTE nextLevel, haskey, gamerunning = 1, facingLeft, holdingBlock; 
-UINT8 player[2]; // The player array will hold the player's position as X ([0]) and Y ([1])
-//UINT8 InitialLevelPlayerPos[2];
-UINT16 scrollX = 0;     // Track the background scroll position
-UINT8 scrollY = 0;      // Track vertical scroll offset (used for level 11)
+UBYTE nextLevel, gamerunning = 1, facingLeft, holdingBlock;
+UINT8 player[2];
+UINT16 scrollX = 0;
+UINT8 scrollY = 0;
+
+// Dialog box tiles using thin 1px border (12 tiles wide, 5 tiles tall)
+const unsigned char dialogTop[12] =    {0x07,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x09};
+const unsigned char dialogMiddle[12] = {0x0A,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x0B};
+const unsigned char dialogBottom[12] = {0x0C,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0E};
+
+// Buffer to save screen area under dialog
+unsigned char savedArea[60];
 
 // Move player sprite with scroll offset compensation
 void movePlayerSprite(UINT8 x, UINT8 y) {
     move_sprite(1, x, y - scrollY);
 }
 
-void init(){
-    DISPLAY_ON; // Turn on the display
+void init(void) {
+    DISPLAY_ON;
 
-    NR52_REG = 0x8F; // Turn on the sound
-    NR51_REG = 0x11; // Enable the sound channels
-    NR50_REG = 0x77; // Increase the volume to its max
+    NR52_REG = 0x8F;
+    NR51_REG = 0x11;
+    NR50_REG = 0x77;
 
-    // Set variables
     facingLeft = TRUE;
     holdingBlock = 0;
 
+    set_bkg_data(0, 18, BackgroundTileSet);
+    set_bkg_tiles(0, 0, BlankScreenWidth, BlankScreenHeight, BlankScreen);
 
-    set_bkg_data(0, 18, BackgroundTileSet);                                 // Load 8 tiles into background memory
-    set_bkg_tiles(0, 0, BlankScreenWidth, BlankScreenHeight, BlankScreen); // Clear screen with a blank tile map
+    set_sprite_data(0, 6, BackgroundTileSet);
+    set_sprite_tile(1, TILE_PLAYER_LEFT);
+    set_sprite_tile(2, TILE_BLOCK);
 
-    set_sprite_data(0, 6, BackgroundTileSet); // Load all the 'sprites' tiles into sprite memory 0-blank 1-dude facing left 2-dude facing right 3-wall 4-block 5-door
-    set_sprite_tile(1, 1);                    // Set Player tile (1) in to the memory (1)
-    set_sprite_tile(2, 4);                    // Set Block  tile (4) in to the memory (2)
-
-    // Set player position
     movePlayerSprite(player[0], player[1]);
-
-    //play_music();
 }
 
-void updateSwitches(){
+void updateSwitches(void) {
     HIDE_WIN;
     SHOW_SPRITES;
     SHOW_BKG;
 }
 
-void loadWinScreen(){
-    HIDE_SPRITES;
-
-    printf("\n \n \n \n \n \n \n \n      You win! \n \n \n \n \n \n \n \n \n");
-    set_sprite_tile(1, 0); // Clear player sprite
-}
-
-void performantdelay(UINT8 numloops){
+void performantDelay(UINT8 numloops) {
     UINT8 i;
-    for(i = 0; i < numloops; i++){
+    for (i = 0; i < numloops; i++) {
         wait_vbl_done();
     }
 }
 
-// Dialog box tiles using thin 1px border (12 tiles wide, 5 tiles tall)
-// Tiles: 7=TL, 8=top, 9=TR, 10=left, 11=right, 12=BL, 13=bottom, 14=BR, 15=h-mid, 16=T-left, 17=T-right
-const unsigned char dialogTop[12] =      {0x07,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x09};
-const unsigned char dialogMiddle[12] =   {0x0A,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x0B};
-const unsigned char dialogSeparator[12] = {0x10,0x0F,0x0F,0x0F,0x0F,0x0F,0x0F,0x0F,0x0F,0x0F,0x0F,0x11};
-const unsigned char dialogBottom[12] =   {0x0C,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0E};
-
-// Buffer to save screen area under dialog
-unsigned char savedArea[60]; // 12 x 5 tiles
-
-// Show restart confirmation dialog (TI-83 style)
-// Returns TRUE if user confirms, FALSE if cancelled
+// Show restart confirmation dialog
 UBYTE showRestartDialog(unsigned char gameMap[], UINT8 mapWidth) {
-    UINT8 selection = 0; // 0 = Yes, 1 = No
+    UINT8 selection = 0;
     UINT8 keys;
     UINT8 i, j;
-    UINT8 dialogX = 4;
-    UINT8 dialogY = 6;
+    // Adjust dialog position to account for scroll offset
+    // This centers the dialog on the currently visible screen area
+    UINT8 dialogX = 4 + (UINT8)(scrollX / 8);
+    UINT8 dialogY = 6 + (scrollY / 8);
 
-    // Hide sprites so player doesn't show through dialog
     HIDE_SPRITES;
 
     // Save the area under the dialog
@@ -98,20 +83,17 @@ UBYTE showRestartDialog(unsigned char gameMap[], UINT8 mapWidth) {
         }
     }
 
-    // Draw dialog box with thin border (no separator line)
+    // Draw dialog box
     set_bkg_tiles(dialogX, dialogY, 12, 1, dialogTop);
     set_bkg_tiles(dialogX, dialogY + 1, 12, 1, dialogMiddle);
     set_bkg_tiles(dialogX, dialogY + 2, 12, 1, dialogMiddle);
     set_bkg_tiles(dialogX, dialogY + 3, 12, 1, dialogMiddle);
     set_bkg_tiles(dialogX, dialogY + 4, 12, 1, dialogBottom);
 
-    // Draw title
     gotoxy(dialogX + 2, dialogY + 1);
     printf("Restart?");
 
-    // Input loop
     while (1) {
-        // Draw options (moved 1 left)
         gotoxy(dialogX + 1, dialogY + 3);
         if (selection == 0) {
             printf("[Yes]  No ");
@@ -124,28 +106,23 @@ UBYTE showRestartDialog(unsigned char gameMap[], UINT8 mapWidth) {
 
         if (keys & J_LEFT) {
             selection = 0;
-            performantdelay(8);
-        }
-        else if (keys & J_RIGHT) {
+            performantDelay(8);
+        } else if (keys & J_RIGHT) {
             selection = 1;
-            performantdelay(8);
-        }
-        else if (keys & J_A || keys & J_START) {
-            performantdelay(8);
+            performantDelay(8);
+        } else if (keys & J_A || keys & J_START) {
+            performantDelay(8);
             if (selection == 0) {
                 return TRUE;
             } else {
-                // Restore saved area and show sprites
                 for (j = 0; j < 5; j++) {
                     set_bkg_tiles(dialogX, dialogY + j, 12, 1, &savedArea[j * 12]);
                 }
                 SHOW_SPRITES;
                 return FALSE;
             }
-        }
-        else if (keys & J_B) {
-            // B cancels - restore saved area and show sprites
-            performantdelay(8);
+        } else if (keys & J_B) {
+            performantDelay(8);
             for (j = 0; j < 5; j++) {
                 set_bkg_tiles(dialogX, dialogY + j, 12, 1, &savedArea[j * 12]);
             }
@@ -155,471 +132,201 @@ UBYTE showRestartDialog(unsigned char gameMap[], UINT8 mapWidth) {
     }
 }
 
-UBYTE checkTileIndexXaxis(UINT8 posX){
-    return ((posX + scrollX) - 8) / 8;
+UBYTE checkTileIndexX(UINT8 posX) {
+    return ((posX + scrollX) - SPRITE_OFFSET_X) / TILE_SIZE;
 }
 
-UBYTE checkTileIndexYaxis(UINT8 posY){
-    return (posY - 16) / 8;
+UBYTE checkTileIndexY(UINT8 posY) {
+    return (posY - SPRITE_OFFSET_Y) / TILE_SIZE;
 }
 
-// Function to check collision, adjusted for scroll position and direction
 BOOLEAN checkCollision(UINT8 x, UINT8 y, const UINT8* map, UINT8 mapWidth) {
-    
-    UINT16 indexTLx, indexTLy, tileindexTL;
+    UINT16 indexX, indexY, tileIndex;
     UBYTE result;
 
-    // Get the location in the grid 20x18
-    indexTLx = checkTileIndexXaxis(x);
-    indexTLy = checkTileIndexYaxis(y);
+    indexX = checkTileIndexX(x);
+    indexY = checkTileIndexY(y);
+    tileIndex = mapWidth * indexY + indexX;
 
-    // Calculate the index in the array of tiles
-    tileindexTL = mapWidth * indexTLy + indexTLx;
+    result = map[tileIndex] == blankmap[0];
 
-    // Test if the tile in the level is empty (value of blank come from const)
-    // True for blank space, false for a blocked
-    result = map[tileindexTL] == blankmap[0];
-
-    // Reached the door, end level
-    if (map[tileindexTL] == doorTile[0]) {
-        gamerunning = 0; // Break the while loop
+    if (map[tileIndex] == doorTile[0]) {
+        gamerunning = 0;
         return 1;
     }
 
     return result;
 }
 
-void pickupBox(UINT8 newplayerx, UINT8 newplayery, UINT8 curplayerx, unsigned char gameMap[], UINT8 mapWidth)
-{
-    UINT16 indexTLx, indexTLy, tileindexTL, tileAboveTL;
+void pickupBox(UINT8 targetX, UINT8 targetY, UINT8 playerX, unsigned char gameMap[], UINT8 mapWidth) {
+    UINT16 indexX, indexY, tileIndex, tileAbove;
 
-    // Get the location in the grid 20x18
-    indexTLx = checkTileIndexXaxis(newplayerx);
-    curplayerx = checkTileIndexXaxis(curplayerx);
-    indexTLy = checkTileIndexYaxis(newplayery);
+    indexX = checkTileIndexX(targetX);
+    playerX = checkTileIndexX(playerX);
+    indexY = checkTileIndexY(targetY);
 
-    tileindexTL = mapWidth * indexTLy + indexTLx;       // Calculate the index in the array of tiles
-    tileAboveTL = mapWidth * (indexTLy - 1) + indexTLx; // used to check if theres a block on top
+    tileIndex = mapWidth * indexY + indexX;
+    tileAbove = mapWidth * (indexY - 1) + indexX;
 
-    // Pickup only boxes without anything on top of it 
-    if (gameMap[tileindexTL] == blockTile[0] && gameMap[tileAboveTL] == blankmap[0])
-    {
-
-        gameMap[tileindexTL] = blankmap[0];                       // remove block from the map array
-        set_bkg_tiles(indexTLx, indexTLy, 1, 1, blankmap);        // remove block from the screen
-        set_bkg_tiles(curplayerx, indexTLy - 1, 1, 1, blockTile); // place block on top of player
-        holdingBlock = 1;                                         // set flag as true
+    if (gameMap[tileIndex] == blockTile[0] && gameMap[tileAbove] == blankmap[0]) {
+        gameMap[tileIndex] = blankmap[0];
+        set_bkg_tiles(indexX, indexY, 1, 1, blankmap);
+        set_bkg_tiles(playerX, indexY - 1, 1, 1, blockTile);
+        holdingBlock = 1;
     }
 }
 
-// void blockFollowPlayer(UINT8 fromPlayerPosX, UINT8 fromPlayerPosY, UINT8 toPlayerPosX, UINT8 toPlayerPosY) {
- 
-//     if (holdingBlock == 1) {
-        
-//         // Calculate the tile indices for the old position
-//         // not used
-//         // UINT8 fromTileX = (fromPlayerPosX - 8) / 8;
-//         // UINT8 fromTileY = (fromPlayerPosY - 16) / 8;
-
-//         // // Remove block from old position (remove from map)
-//         // set_bkg_tiles(fromTileX, fromTileY - 1, 1, 1, blankmap);
-        
-        
-//         UINT8 toTileX = (toPlayerPosX + scrollX - 8) / 8;
-//         UINT8 toTileY = (toPlayerPosY - 16) / 8;
-
-//         // Add block to new position (add to map)
-//         set_bkg_tiles(toTileX, toTileY - 1, 1, 1, blockTile);
-
-//     }
-// }
-
-void blockFollowPlayer2(UINT8 toPlayerPosX, UINT8 toPlayerPosY) {
- 
+void blockFollowPlayer(UINT8 toX, UINT8 toY) {
     if (holdingBlock == 1) {
-               
-        UINT8 toTileX = (toPlayerPosX + scrollX - 8) / 8;
-        UINT8 toTileY = (toPlayerPosY - 16) / 8;
-
-        // Add block to new position (add to map)
-        set_bkg_tiles(toTileX, toTileY - 1, 1, 1, blockTile);
-
+        UINT8 tileX = (toX + scrollX - SPRITE_OFFSET_X) / TILE_SIZE;
+        UINT8 tileY = (toY - SPRITE_OFFSET_Y) / TILE_SIZE;
+        set_bkg_tiles(tileX, tileY - 1, 1, 1, blockTile);
     }
 }
 
-// Little hack
-void dropBox(UINT8 posX, UINT8 posY, unsigned char gameMap[], UINT8 mapWidth){
-    UINT8 indexTLx, curplayerx, indexTLy;
+void dropBox(UINT8 posX, UINT8 posY, unsigned char gameMap[], UINT8 mapWidth) {
+    UINT8 indexX, playerTileX, indexY;
 
-    curplayerx = checkTileIndexXaxis(player[0]);
-    indexTLy = posY;
+    playerTileX = checkTileIndexX(player[0]);
+    indexY = posY;
 
-    // if -1 default option
     if (posY == player[1]) {
-        set_bkg_tiles(curplayerx, checkTileIndexYaxis(indexTLy) - 1 , 1, 1, blankmap);
+        set_bkg_tiles(playerTileX, checkTileIndexY(indexY) - 1, 1, 1, blankmap);
     } else {
-        set_bkg_tiles(curplayerx, checkTileIndexYaxis(indexTLy), 1, 1, blankmap);
-    }
-    
-    while (checkCollision(posX, indexTLy + 8, gameMap, mapWidth)){
-        indexTLy += 8;
+        set_bkg_tiles(playerTileX, checkTileIndexY(indexY), 1, 1, blankmap);
     }
 
-    indexTLx = checkTileIndexXaxis(posX);
-    indexTLy = checkTileIndexYaxis(indexTLy);
+    while (checkCollision(posX, indexY + TILE_SIZE, gameMap, mapWidth)) {
+        indexY += TILE_SIZE;
+    }
 
-    // Calculate the index in the array of tiles
-    UINT16 tileindexTL = mapWidth * indexTLy + indexTLx;
+    indexX = checkTileIndexX(posX);
+    indexY = checkTileIndexY(indexY);
 
-    // add block to the map array
-    gameMap[tileindexTL] = blockTile[0];
+    UINT16 tileIndex = mapWidth * indexY + indexX;
+    gameMap[tileIndex] = blockTile[0];
+    set_bkg_tiles(indexX, indexY, 1, 1, blockTile);
 
-    // add block to the screen
-    set_bkg_tiles(indexTLx, indexTLy, 1, 1, blockTile); 
-
-
-    holdingBlock = 0; 
+    holdingBlock = 0;
 }
 
-// original
-// void dropBox(UINT8 posX, unsigned char gameMap[], UINT8 mapWidth){
-//     UINT8 indexTLx, curplayerx, indexTLy;
-
-//     curplayerx = checkTileIndexXaxis(player[0]);
-//     indexTLy = player[1];
-
-//     set_bkg_tiles(curplayerx, checkTileIndexYaxis(indexTLy) - 1, 1, 1, blankmap);
-
-//     while (checkCollision(posX, indexTLy + 8, gameMap, mapWidth)){
-//         indexTLy += 8;
-//     }
-
-//     indexTLx = checkTileIndexXaxis(posX);
-//     indexTLy = checkTileIndexYaxis(indexTLy);
-
-//     // Calculate the index in the array of tiles
-//     UINT16 tileindexTL = mapWidth * indexTLy + indexTLx;
-
-//     // add block to the map array
-//     gameMap[tileindexTL] = blockTile[0];
-
-//     // add block to the screen
-//     set_bkg_tiles(indexTLx, indexTLy, 1, 1, blockTile); 
-
-
-//     holdingBlock = 0; 
-// }
-
-UBYTE resetLevel(){ 
-    // Reset scroll
+UBYTE resetLevel(void) {
     scroll_bkg(scrollX * -1, 0);
     scrollX = 0;
-
-    // Restart level
     nextLevel -= 1;
-
-    // break the while loop
-    gamerunning = 0; 
-
+    gamerunning = 0;
     return 1;
 }
 
-void checkInput(unsigned char gameMap[], UINT8 mapWidth){
+// Helper function to handle horizontal movement
+static void moveHorizontal(INT8 direction, unsigned char gameMap[], UINT8 mapWidth) {
+    UINT8 nextX = player[0] + (direction * TILE_SIZE);
 
-    if (joypad() & J_LEFT) {
-        // Turn player to the left
-        set_sprite_tile(1, 1);
+    // Set sprite direction
+    if (direction == DIR_LEFT) {
+        set_sprite_tile(1, TILE_PLAYER_LEFT);
         facingLeft = TRUE;
-
-
-         // Check if player is holding a block and if he can pass through tight spaces
-        if (holdingBlock == 1 && checkCollision(player[0] - 8, player[1] - 8, gameMap, mapWidth) == FALSE) {
-            //EMU_printf("Holding block and can't move left\n");
-            return;
-        }
-
-        // Check if player can move to the left
-        if (checkCollision(player[0] - 8, player[1], gameMap, mapWidth)) {
-            
-            // Remove block from map if player is holding one, from the current position
-            if (holdingBlock == 1) {
-                set_bkg_tiles(checkTileIndexXaxis(player[0]), checkTileIndexYaxis(player[1]) - 1, 1, 1, blankmap);
-            }   
-
-            // Save player new position to vars
-            UINT8 posX = player[0] - 8;
-            UINT8 posY = player[1] + 8;
-
-            // Check if player has block below it, if not fall until it finds a block
-            while (checkCollision(posX, posY, gameMap, mapWidth)) {
-
-               
-
-               // player[0] = posY;
-                player[1] = posY;
-
-                movePlayerSprite(player[0], player[1]);
-                
-                posY += 8;
-            }
-
-            // Check player position to know if we need to scroll the background or move sprite
-            if (player[0] <= 80 && scrollX > 0) {
-                // Scroll background
-                scroll_bkg(-8, 0);
-
-                // Save how much the background scrolled to global var
-                scrollX -= 8;
-
-                // Move the player to new position
-                movePlayerSprite(player[0], player[1]);
-
-
-                // Update block position if player is holding one
-               // blockFollowPlayer(player[0] + 8 + scrollX, player[1], player[0], player[1]);
-               blockFollowPlayer2(player[0], player[1]);
-
-                
-                //blockFollowPlayer(player[0] + scrollX, player[1], player[0], player[1]);
-               
-                
-            // Calculate the index considering the scroll offset
-            } else {
-
-                EMU_printf("aqui 1");
-
-
-                // Move the player to new position
-                movePlayerSprite(player[0] - 8, player[1]);
-                
-                // Update player position horizontally (X)
-                player[0] = posX;
-                
-                // Update block position if player is holding one
-               // blockFollowPlayer(player[0] + 8 + scrollX, player[1], player[0], player[1]);
-                blockFollowPlayer2(player[0], player[1]);
-               //  blockFollowPlayer(player[0] + scrollX, player[1], player[0], player[1]);
-               
-            
-            }
-
-        }
-    }
-
-    if (joypad() & J_RIGHT) {
-
-        // Turn player to the right
-        set_sprite_tile(1, 2);
+    } else {
+        set_sprite_tile(1, TILE_PLAYER_RIGHT);
         facingLeft = FALSE;
-
-    
-         // Check if player is holding a block and if he can pass through tight spaces
-        if (holdingBlock == 1 && checkCollision(player[0] + 8, player[1] - 8, gameMap, mapWidth) == FALSE) {
-            //EMU_printf("Holding block and can't move right\n");
-            return;
-        }
-
-        // Check if player can move to the right
-        if ( checkCollision(player[0] + 8, player[1], gameMap, mapWidth)) {
-            
-             // Remove block from map if player is holding one, from the current position
-            if (holdingBlock == 1) {
-                set_bkg_tiles(checkTileIndexXaxis(player[0]), checkTileIndexYaxis(player[1]) - 1, 1, 1, blankmap);
-            }
-
-            // Save player new position to vars
-            UINT8 posX = player[0] + 8;
-            UINT8 posY = player[1] + 8;
-
-            // Check if player has block below it. if not, fall until it finds a block
-            while (checkCollision(posX, posY, gameMap, mapWidth)) {
-                
-
-                player[1] = posY;
-                movePlayerSprite(player[0], player[1]);
-                posY += 8;
-
-                EMU_printf("fall posY: %d\n", player[1]);
-            }
-
-            // Check player position to know if we need to scroll the background or move sprite
-            if (player[0] >= 80 && scrollX < (mapWidth * 8 - 160)) {
-                // Scroll background
-                scroll_bkg(8, 0);
-
-                // Save how much the background scrolled to global var
-                scrollX += 8;
-
-                // Move the player to new position
-                movePlayerSprite(player[0], player[1]);
-
-
-                // Update block position if player is holding one
-                //blockFollowPlayer(player[0], player[1], player[0], player[1]);
-                
-               //blockFollowPlayer(player[0] - 8 + scrollX, player[1], player[0], player[1]);
-               blockFollowPlayer2(player[0], player[1]);
-                //blockFollowPlayer(player[0] + scrollX, player[1], player[0], player[1]);
-               
-                    
-                
-        // Calculate the index considering the scroll offset
-            } else {
-               // EMU_printf("aqui 2");
-
-                // Move the player to new position
-                movePlayerSprite(player[0] + 8, player[1]);
-                
-                // Update player position horizontally (X)
-                player[0] += 8;
-
-                // Update block position if player is holding one
-                //blockFollowPlayer(player[0], player[1], posX, posY);
-                
-                //blockFollowPlayer(player[0] - 8 + scrollX, player[1], player[0], player[1]);
-                blockFollowPlayer2(player[0], player[1]);
-                //blockFollowPlayer(player[0] + scrollX, player[1], player[0], player[1]);
-             
-                
-            }
-
-             //blockFollowPlayer(player[0] - 8 + scrollX, player[1], player[0], player[1]);
-
-        }
     }
-    
-    // Climb logic
-    if (joypad() & J_UP) {
 
-        if (facingLeft == TRUE && checkCollision(player[0] - 8, player[1], gameMap, mapWidth) == FALSE){
-            
-            // Is facing left
-            if (checkCollision(player[0] - 8, player[1] - 8, gameMap, mapWidth)){
-
-                // Remove block from map if player is holding one, from the current position
-                if (holdingBlock == 1) {
-                    set_bkg_tiles(checkTileIndexXaxis(player[0]), checkTileIndexYaxis(player[1]) - 1, 1, 1, blankmap);
-                }
-
-                // If player is holding a block, move it with the player
-                //blockFollowPlayer(player[0] + scrollX, player[1], player[0] - 8, player[1] - 8);
-                blockFollowPlayer2(player[0] - 8, player[1] - 8);
-
-                // Move player sprite
-                movePlayerSprite(player[0] - 8, player[1] - 8);
-                
-                // Update player position
-                player[0] -= 8;
-                player[1] -= 8;
-            }
-
-        } else if (facingLeft == FALSE && checkCollision(player[0] + 8, player[1], gameMap, mapWidth) == FALSE) {
-            
-            // Is facing right
-            if (checkCollision(player[0] + 8, player[1] - 8, gameMap, mapWidth)){
-                
-                // Remove block from map if player is holding one, from the current position
-                if (holdingBlock == 1) {
-                    set_bkg_tiles(checkTileIndexXaxis(player[0]), checkTileIndexYaxis(player[1]) - 1, 1, 1, blankmap);
-                }
-
-                // If player is holding a block, move it with the player
-                //blockFollowPlayer(player[0] + scrollX, player[1], player[0] + 8, player[1] - 8);
-                blockFollowPlayer2(player[0] + 8, player[1] - 8);
-                                
-                // Move player sprite
-                movePlayerSprite(player[0] + 8, player[1] - 8);
-
-                // Update player position
-                player[0] += 8;
-                player[1] -= 8;
-            }
-        }
-        
+    // Check if holding block and can pass through tight spaces
+    if (holdingBlock == 1 && checkCollision(nextX, player[1] - TILE_SIZE, gameMap, mapWidth) == FALSE) {
+        return;
     }
-    
-    // pickup and drop block
-    if ((joypad() & J_DOWN) || (joypad() & J_A)) {
 
-        // Not holding anything, lets pick it
-        if (holdingBlock == 0){
+    // Check if player can move
+    if (checkCollision(nextX, player[1], gameMap, mapWidth)) {
+        // Remove block from current position if holding one
+        if (holdingBlock == 1) {
+            set_bkg_tiles(checkTileIndexX(player[0]), checkTileIndexY(player[1]) - 1, 1, 1, blankmap);
+        }
 
-            // Not holding a block, lets pick it
-            if (facingLeft == TRUE) {
-                pickupBox(player[0] - 8, player[1], player[0], gameMap, mapWidth);
-            } else {
-                pickupBox(player[0] + 8, player[1], player[0], gameMap, mapWidth);
-            }
+        UINT8 posX = nextX;
+        UINT8 posY = player[1] + TILE_SIZE;
 
+        // Fall until finding ground
+        while (checkCollision(posX, posY, gameMap, mapWidth)) {
+            player[1] = posY;
+            movePlayerSprite(player[0], player[1]);
+            posY += TILE_SIZE;
+        }
+
+        // Check if need to scroll or move sprite
+        BOOLEAN shouldScroll = (direction == DIR_LEFT)
+            ? (player[0] <= SCROLL_THRESHOLD && scrollX > 0)
+            : (player[0] >= SCROLL_THRESHOLD && scrollX < (mapWidth * TILE_SIZE - SCREEN_WIDTH_PIXELS));
+
+        if (shouldScroll) {
+            scroll_bkg(direction * TILE_SIZE, 0);
+            scrollX += direction * TILE_SIZE;
+            movePlayerSprite(player[0], player[1]);
+            blockFollowPlayer(player[0], player[1]);
         } else {
-
-            // its holding a block, lets drop it
-            // check position and if space on the right is empty
-
-            // Original
-            // if (facingLeft == TRUE && checkCollision((player[0] - 8) + scrollX, player[1], gameMap, mapWidth)){
-              
-            //     dropBox((player[0] - 8), gameMap, mapWidth);
-
-            // } else if (facingLeft == FALSE && checkCollision((player[0] + 8) + scrollX, player[1], gameMap, mapWidth)) {
-            
-
-            //     dropBox((player[0] + 8), gameMap, mapWidth);
-            // }
-
-            // v2
-            // if (facingLeft == TRUE && checkCollision((player[0] - 8) + scrollX, player[1], gameMap, mapWidth)){
-              
-            //     dropBox((player[0] - 8), gameMap, mapWidth);
-
-            // } else if (facingLeft == FALSE && checkCollision((player[0] + 8), player[1], gameMap, mapWidth)) {
-            
-            //     dropBox((player[0] + 8), gameMap, mapWidth);
-            // }
-
-// v2
-            if (facingLeft == TRUE && checkCollision((player[0] - 8) + scrollX, player[1] - 8, gameMap, mapWidth)){
-                
-                // it detected that theres no block at head level, 
-                // lets detect if has a block at same level to drop it above it or on the floor
-                if (checkCollision((player[0] - 8) + scrollX, player[1], gameMap, mapWidth)) {
-                    dropBox((player[0] - 8), player[1], gameMap, mapWidth);
-                } else {
-                    dropBox((player[0] - 8), player[1] - 8, gameMap, mapWidth);
-                    // set_bkg_tiles(checkTileIndexXaxis(player[0]), checkTileIndexYaxis(player[1]) - 1, 1, 1, blankmap);
-                    // set_bkg_tiles(checkTileIndexXaxis(player[0] - 8), checkTileIndexYaxis(player[1] - 8), 1, 1, blockTile);
-                    // holdingBlock = 0; 
-                }
-
-                //dropBox((player[0] - 8), gameMap, mapWidth);
-
-            } else if (facingLeft == FALSE && checkCollision((player[0] + 8), player[1] - 8, gameMap, mapWidth)) {
-                
-                // it detected that theres no block at head level, 
-                // lets detect if has a block at same level to drop it above it or on the floor
-                if (checkCollision((player[0] + 8), player[1], gameMap, mapWidth)) {
-                    dropBox((player[0] + 8), player[1], gameMap, mapWidth);
-                } else {
-                    dropBox((player[0] + 8), player[1] - 8, gameMap, mapWidth);
-                    // set_bkg_tiles(checkTileIndexXaxis(player[0]), checkTileIndexYaxis(player[1]) - 1, 1, 1, blankmap);
-                    // set_bkg_tiles(checkTileIndexXaxis(player[0] + 8), checkTileIndexYaxis(player[1] - 8), 1, 1, blockTile);
-                    // holdingBlock = 0; 
-                }
-                //dropBox((player[0] + 8), gameMap, mapWidth);
-            }
- 
-
+            movePlayerSprite(nextX, player[1]);
+            player[0] = posX;
+            blockFollowPlayer(player[0], player[1]);
         }
-    } 
-    
-    // reset level with confirmation dialog
-    if (joypad() & J_SELECT) {
+    }
+}
+
+// Helper function to handle climbing
+static void climb(INT8 direction, unsigned char gameMap[], UINT8 mapWidth) {
+    UINT8 nextX = player[0] + (direction * TILE_SIZE);
+    UINT8 nextY = player[1] - TILE_SIZE;
+
+    // Check if there's a wall to climb and space above
+    if (checkCollision(nextX, player[1], gameMap, mapWidth) == FALSE &&
+        checkCollision(nextX, nextY, gameMap, mapWidth)) {
+
+        if (holdingBlock == 1) {
+            set_bkg_tiles(checkTileIndexX(player[0]), checkTileIndexY(player[1]) - 1, 1, 1, blankmap);
+        }
+
+        blockFollowPlayer(nextX, nextY);
+        movePlayerSprite(nextX, nextY);
+
+        player[0] = nextX;
+        player[1] = nextY;
+    }
+}
+
+// Helper function to handle pickup/drop
+static void handlePickupDrop(unsigned char gameMap[], UINT8 mapWidth) {
+    INT8 direction = facingLeft ? DIR_LEFT : DIR_RIGHT;
+    UINT8 targetX = player[0] + (direction * TILE_SIZE);
+
+    if (holdingBlock == 0) {
+        pickupBox(targetX, player[1], player[0], gameMap, mapWidth);
+    } else {
+        if (checkCollision(targetX + (facingLeft ? scrollX : 0), player[1] - TILE_SIZE, gameMap, mapWidth)) {
+            if (checkCollision(targetX + (facingLeft ? scrollX : 0), player[1], gameMap, mapWidth)) {
+                dropBox(targetX, player[1], gameMap, mapWidth);
+            } else {
+                dropBox(targetX, player[1] - TILE_SIZE, gameMap, mapWidth);
+            }
+        }
+    }
+}
+
+void checkInput(unsigned char gameMap[], UINT8 mapWidth) {
+    UINT8 keys = joypad();
+
+    if (keys & J_LEFT) {
+        moveHorizontal(DIR_LEFT, gameMap, mapWidth);
+    } else if (keys & J_RIGHT) {
+        moveHorizontal(DIR_RIGHT, gameMap, mapWidth);
+    } else if (keys & J_UP) {
+        INT8 direction = facingLeft ? DIR_LEFT : DIR_RIGHT;
+        climb(direction, gameMap, mapWidth);
+    } else if ((keys & J_DOWN) || (keys & J_A)) {
+        handlePickupDrop(gameMap, mapWidth);
+    } else if (keys & J_SELECT) {
         if (showRestartDialog(gameMap, mapWidth)) {
             resetLevel();
         }
     }
-    
-    performantdelay(10);
+
+    performantDelay(10);
 }
-
-
