@@ -5,6 +5,11 @@
 
 UINT8 menuSelection = 0;
 
+// Forward declarations
+void drawSplashDemo(void);
+void drawSplashTitle(void);
+void drawMenu(void);
+
 void drawSplashTitle(void) {
     gotoxy(5, 1);
     printf("BLOCK DUDE");
@@ -46,6 +51,46 @@ void drawMenu(void) {
     } else {
         printf(" HELP ");
     }
+}
+
+// Show help screen with controls and objective
+void showHelpScreen(void) {
+    // Clear screen
+    set_bkg_tiles(0, 0, BlankScreenWidth, BlankScreenHeight, BlankScreen);
+
+    // Controls
+    gotoxy(1, 2);
+    printf("CONTROLS:");
+
+    gotoxy(1, 4);
+    printf("Left/Right - Move");
+
+    gotoxy(1, 6);
+    printf("Up - Climb");
+
+    gotoxy(1, 8);
+    printf("Down/A - Pick/Drop");
+
+    gotoxy(1, 10);
+    printf("Select - Restart");
+
+    // Objective
+    gotoxy(1, 13);
+    printf("GOAL:");
+    gotoxy(1, 15);
+    printf("Stack boxes to");
+    gotoxy(1, 16);
+    printf("reach the door!");
+
+    // Wait for button
+    waitpad(J_B | J_A | J_START);
+    waitpadup();
+
+    // Restore splash screen
+    set_bkg_tiles(0, 0, BlankScreenWidth, BlankScreenHeight, BlankScreen);
+    drawSplashTitle();
+    drawMenu();
+    drawSplashDemo();
 }
 
 // Splash map with offset tiles (128+) to avoid conflict with font
@@ -124,13 +169,8 @@ void splashScreen(void) {
         else if (keys & J_START || keys & J_A) {
             performantdelay(10);
             if (menuSelection == 2) {
-                // HELP - placeholder
-                gotoxy(3, 10);
-                printf("Coming soon...");
-                waitpad(J_A | J_B | J_START);
-                waitpadup();
-                // Redraw scene
-                drawSplashDemo();
+                // HELP screen
+                showHelpScreen();
             } else if (menuSelection == 0) {
                 // NEW - start from level 1
                 startLevel = 1;
