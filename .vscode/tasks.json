@@ -18,6 +18,27 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Run Emulator",
+            "type": "shell",
+            "osx": {
+                "command": "open -a SameBoy ./dist/blockdude.gb"
+            },
+            "windows": {
+                "command": "echo 'Configure your emulator path for Windows'"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build and Run",
+            "dependsOn": ["Build ROM", "Run Emulator"],
+            "dependsOrder": "sequence",
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
         }
     ]
 }

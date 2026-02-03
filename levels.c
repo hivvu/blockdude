@@ -5,8 +5,11 @@
 #include "splashscreen.c"
 
 void loadLevel(UINT8 levelNum){
-    // splashScreen();
-    
+    splashScreen();
+
+    // Use startLevel from menu selection
+    levelNum = startLevel;
+
     while (1) {
         if (levelNum == 1){
             initLevel1();
