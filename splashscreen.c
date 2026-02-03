@@ -10,10 +10,47 @@ void drawSplashDemo(void);
 void drawSplashTitle(void);
 void drawMenu(void);
 void updateDemoAnimation(void);
+void showCreditsScreen(void);
 
 void drawSplashTitle(void) {
     gotoxy(5, 3);
     printf("BLOCK DUDE");
+}
+
+// Credits screen shown before splash
+void showCreditsScreen(void) {
+    DISPLAY_ON;
+    HIDE_SPRITES;
+    SHOW_BKG;
+
+    // Title (same position as splash)
+    gotoxy(5, 3);
+    printf("BLOCK DUDE");
+
+    // Credits (centered)
+    gotoxy(5, 6);
+    printf("Created By");
+    gotoxy(3, 7);
+    printf("Brandon Sterner");
+
+    gotoxy(5, 9);
+    printf("Ported by");
+    gotoxy(4, 10);
+    printf("Ivo Pereira");
+
+    // Footer disclaimer
+    gotoxy(4, 13);
+    printf("NOT LICENSED");
+    gotoxy(9, 14);
+    printf("BY");
+    gotoxy(6, 15);
+    printf("NINTENDO");
+    gotoxy(8, 16);
+    printf("2026");
+
+    // Wait for button press
+    waitpad(J_A | J_B | J_START);
+    waitpadup();
 }
 
 void drawMenu(void) {
@@ -287,13 +324,13 @@ void updateDemoAnimation(void) {
 }
 
 void splashScreen(void) {
+    // Show credits screen first
+    showCreditsScreen();
+
     DISPLAY_ON;
     SHOW_BKG;
 
-    // Load tiles
-    set_bkg_data(0, 18, BackgroundTileSet);
-
-    // Clear screen
+    // Clear screen (don't load game tiles at offset 0 - it corrupts the font!)
     set_bkg_tiles(0, 0, BlankScreenWidth, BlankScreenHeight, BlankScreen);
 
     // Title first
