@@ -62,7 +62,7 @@ void drawSplashDemo(void) {
         }
     }
     // Load game tiles at offset 128
-    set_bkg_data(128, 7, BackgroundTileSet);
+    set_bkg_data(128, 18, BackgroundTileSet);
     // Draw demo scene
     set_bkg_tiles(0, 5, SplashWidth, SplashHeight, SplashOffset);
 }
@@ -73,7 +73,7 @@ void splashScreen(void) {
     SHOW_BKG;
 
     // Load tiles
-    set_bkg_data(0, 7, BackgroundTileSet);
+    set_bkg_data(0, 18, BackgroundTileSet);
 
     // Clear screen
     set_bkg_tiles(0, 0, BlankScreenWidth, BlankScreenHeight, BlankScreen);

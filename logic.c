@@ -1,6 +1,8 @@
 #include "sprites/BackgroundTileSet.c"
 #include "sprites/BlankScreen.c"
-#include <string.h> 
+#include <string.h>
+#include <stdio.h>
+#include <gbdk/console.h>
 #include "audio.h"
 
 // Tiles
@@ -34,7 +36,7 @@ void init(){
     holdingBlock = 0;
 
 
-    set_bkg_data(0, 6, BackgroundTileSet);                                 // Load 6 tiles into background memory
+    set_bkg_data(0, 18, BackgroundTileSet);                                 // Load 8 tiles into background memory
     set_bkg_tiles(0, 0, BlankScreenWidth, BlankScreenHeight, BlankScreen); // Clear screen with a blank tile map
 
     set_sprite_data(0, 6, BackgroundTileSet); // Load all the 'sprites' tiles into sprite memory 0-blank 1-dude facing left 2-dude facing right 3-wall 4-block 5-door
@@ -64,7 +66,93 @@ void performantdelay(UINT8 numloops){
     UINT8 i;
     for(i = 0; i < numloops; i++){
         wait_vbl_done();
-    }     
+    }
+}
+
+// Dialog box tiles using thin 1px border (12 tiles wide, 5 tiles tall)
+// Tiles: 7=TL, 8=top, 9=TR, 10=left, 11=right, 12=BL, 13=bottom, 14=BR, 15=h-mid, 16=T-left, 17=T-right
+const unsigned char dialogTop[12] =      {0x07,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x09};
+const unsigned char dialogMiddle[12] =   {0x0A,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x0B};
+const unsigned char dialogSeparator[12] = {0x10,0x0F,0x0F,0x0F,0x0F,0x0F,0x0F,0x0F,0x0F,0x0F,0x0F,0x11};
+const unsigned char dialogBottom[12] =   {0x0C,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0D,0x0E};
+
+// Buffer to save screen area under dialog
+unsigned char savedArea[60]; // 12 x 5 tiles
+
+// Show restart confirmation dialog (TI-83 style)
+// Returns TRUE if user confirms, FALSE if cancelled
+UBYTE showRestartDialog(unsigned char gameMap[], UINT8 mapWidth) {
+    UINT8 selection = 0; // 0 = Yes, 1 = No
+    UINT8 keys;
+    UINT8 i, j;
+    UINT8 dialogX = 4;
+    UINT8 dialogY = 6;
+
+    // Hide sprites so player doesn't show through dialog
+    HIDE_SPRITES;
+
+    // Save the area under the dialog
+    for (j = 0; j < 5; j++) {
+        for (i = 0; i < 12; i++) {
+            savedArea[j * 12 + i] = gameMap[(dialogY + j) * mapWidth + (dialogX + i)];
+        }
+    }
+
+    // Draw dialog box with thin border (no separator line)
+    set_bkg_tiles(dialogX, dialogY, 12, 1, dialogTop);
+    set_bkg_tiles(dialogX, dialogY + 1, 12, 1, dialogMiddle);
+    set_bkg_tiles(dialogX, dialogY + 2, 12, 1, dialogMiddle);
+    set_bkg_tiles(dialogX, dialogY + 3, 12, 1, dialogMiddle);
+    set_bkg_tiles(dialogX, dialogY + 4, 12, 1, dialogBottom);
+
+    // Draw title
+    gotoxy(dialogX + 2, dialogY + 1);
+    printf("Restart?");
+
+    // Input loop
+    while (1) {
+        // Draw options (moved 1 left)
+        gotoxy(dialogX + 1, dialogY + 3);
+        if (selection == 0) {
+            printf("[Yes]  No ");
+        } else {
+            printf(" Yes  [No]");
+        }
+
+        wait_vbl_done();
+        keys = joypad();
+
+        if (keys & J_LEFT) {
+            selection = 0;
+            performantdelay(8);
+        }
+        else if (keys & J_RIGHT) {
+            selection = 1;
+            performantdelay(8);
+        }
+        else if (keys & J_A || keys & J_START) {
+            performantdelay(8);
+            if (selection == 0) {
+                return TRUE;
+            } else {
+                // Restore saved area and show sprites
+                for (j = 0; j < 5; j++) {
+                    set_bkg_tiles(dialogX, dialogY + j, 12, 1, &savedArea[j * 12]);
+                }
+                SHOW_SPRITES;
+                return FALSE;
+            }
+        }
+        else if (keys & J_B) {
+            // B cancels - restore saved area and show sprites
+            performantdelay(8);
+            for (j = 0; j < 5; j++) {
+                set_bkg_tiles(dialogX, dialogY + j, 12, 1, &savedArea[j * 12]);
+            }
+            SHOW_SPRITES;
+            return FALSE;
+        }
+    }
 }
 
 UBYTE checkTileIndexXaxis(UINT8 posX){
@@ -524,9 +612,11 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth){
         }
     } 
     
-    // reset level or debug info
+    // reset level with confirmation dialog
     if (joypad() & J_SELECT) {
-        resetLevel();
+        if (showRestartDialog(gameMap, mapWidth)) {
+            resetLevel();
+        }
     }
     
     performantdelay(10);
