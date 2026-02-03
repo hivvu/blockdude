@@ -15,7 +15,12 @@ UBYTE nextLevel, haskey, gamerunning = 1, facingLeft, holdingBlock;
 UINT8 player[2]; // The player array will hold the player's position as X ([0]) and Y ([1])
 //UINT8 InitialLevelPlayerPos[2];
 UINT16 scrollX = 0;     // Track the background scroll position
+UINT8 scrollY = 0;      // Track vertical scroll offset (used for level 11)
 
+// Move player sprite with scroll offset compensation
+void movePlayerSprite(UINT8 x, UINT8 y) {
+    move_sprite(1, x, y - scrollY);
+}
 
 void init(){
     DISPLAY_ON; // Turn on the display
@@ -37,7 +42,7 @@ void init(){
     set_sprite_tile(2, 4);                    // Set Block  tile (4) in to the memory (2)
 
     // Set player position
-    move_sprite(1, player[0], player[1]);
+    movePlayerSprite(player[0], player[1]);
 
     //play_music();
 }
@@ -265,7 +270,7 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth){
                // player[0] = posY;
                 player[1] = posY;
 
-                move_sprite(1, player[0], player[1]);
+                movePlayerSprite(player[0], player[1]);
                 
                 posY += 8;
             }
@@ -279,7 +284,7 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth){
                 scrollX -= 8;
 
                 // Move the player to new position
-                move_sprite(1, player[0], player[1]);
+                movePlayerSprite(player[0], player[1]);
 
 
                 // Update block position if player is holding one
@@ -297,7 +302,7 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth){
 
 
                 // Move the player to new position
-                move_sprite(1, player[0] - 8, player[1]);
+                movePlayerSprite(player[0] - 8, player[1]);
                 
                 // Update player position horizontally (X)
                 player[0] = posX;
@@ -343,7 +348,7 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth){
                 
 
                 player[1] = posY;
-                move_sprite(1, player[0], player[1]);
+                movePlayerSprite(player[0], player[1]);
                 posY += 8;
 
                 EMU_printf("fall posY: %d\n", player[1]);
@@ -358,7 +363,7 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth){
                 scrollX += 8;
 
                 // Move the player to new position
-                move_sprite(1, player[0], player[1]);
+                movePlayerSprite(player[0], player[1]);
 
 
                 // Update block position if player is holding one
@@ -375,7 +380,7 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth){
                // EMU_printf("aqui 2");
 
                 // Move the player to new position
-                move_sprite(1, player[0] + 8, player[1]);
+                movePlayerSprite(player[0] + 8, player[1]);
                 
                 // Update player position horizontally (X)
                 player[0] += 8;
@@ -413,7 +418,7 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth){
                 blockFollowPlayer2(player[0] - 8, player[1] - 8);
 
                 // Move player sprite
-                move_sprite(1, player[0] - 8, player[1] - 8);
+                movePlayerSprite(player[0] - 8, player[1] - 8);
                 
                 // Update player position
                 player[0] -= 8;
@@ -435,7 +440,7 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth){
                 blockFollowPlayer2(player[0] + 8, player[1] - 8);
                                 
                 // Move player sprite
-                move_sprite(1, player[0] + 8, player[1] - 8);
+                movePlayerSprite(player[0] + 8, player[1] - 8);
 
                 // Update player position
                 player[0] += 8;

@@ -1,4 +1,3 @@
-#include "levels/level0.c"
 #include "levels/level1.c"
 #include "levels/level2.c"
 #include "levels/level3.c"
@@ -15,13 +14,11 @@
 void loadLevel(UINT8 levelNum){
     splashScreen();
 
-    // Use startLevel from menu selection
+    // Use startLevel from menu selection (levels 1-11)
     levelNum = startLevel;
 
     while (1) {
-        if (levelNum == 0){
-            initLevel0();
-        } else if (levelNum == 1){
+        if (levelNum == 1){
             initLevel1();
         } else if (levelNum == 2){
             initLevel2();
@@ -43,7 +40,7 @@ void loadLevel(UINT8 levelNum){
             initLevel10();
         } else if (levelNum == 11){
             initLevel11();
-        } else {  
+        } else {
             break;
         }
 

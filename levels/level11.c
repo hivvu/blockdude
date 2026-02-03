@@ -29,11 +29,9 @@ unsigned char level11Map[] =
 void initLevel11(){
   nextLevel = 12;
   gamerunning = 1;
-  
+
   player[0] = 112;
   player[1] = 48;
-  
- // scroll_bkg(0, 4);
 
   init();
 
@@ -41,11 +39,18 @@ void initLevel11(){
   UINT16 mapLevel[level11MapLength];
 
   // Copy level map to a temp array that will be used in game
-  // The original map need to be unchanged so we can reset the level    
+  // The original map need to be unchanged so we can reset the level
   memcpy(mapLevel, level11Map, level11MapLength);
-    
-  // Load map 
+
+  // Load map
   set_bkg_tiles(0, 0, level11Width, level11Height, mapLevel); // Load Level
+
+  // Shift background 4px up to show part of ceiling and floor (level is 19 tiles, screen is 18)
+  scrollY = 4;
+  move_bkg(0, scrollY);
+
+  // Update player sprite position with new scroll offset
+  movePlayerSprite(player[0], player[1]);
 
   while (gamerunning)
   {
@@ -53,4 +58,8 @@ void initLevel11(){
       updateSwitches(); // Make sure the SHOW_SPRITES and SHOW_BKG switches are on each loop
       wait_vbl_done(); // Wait until VBLANK to avoid corrupting memory
   }
+
+  // Reset scroll for next level
+  scrollY = 0;
+  move_bkg(0, 0);
 }

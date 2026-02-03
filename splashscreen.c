@@ -21,24 +21,26 @@ void drawMenu(void) {
         printf(" NEW ");
     }
 
-    // LEVEL number
-    gotoxy(8, 16);
+    // LEVEL number (with leading zero)
+    gotoxy(7, 16);
+    printf("    "); // Clear area first
+    gotoxy(7, 16);
     if (menuSelection == 1) {
         if (startLevel < 10) {
-            printf("[%d] ", startLevel);
+            printf("[0%d]", startLevel);
         } else {
             printf("[%d]", startLevel);
         }
     } else {
         if (startLevel < 10) {
-            printf(" %d  ", startLevel);
+            printf(" 0%d ", startLevel);
         } else {
             printf(" %d ", startLevel);
         }
     }
 
     // HELP
-    gotoxy(14, 16);
+    gotoxy(12, 16);
     if (menuSelection == 2) {
         printf("[HELP]");
     } else {
@@ -106,7 +108,7 @@ void splashScreen(void) {
             performantdelay(10);
         }
         else if (keys & J_UP) {
-            if (menuSelection == 1 && startLevel < 12) {
+            if (menuSelection == 1 && startLevel < 11) {
                 startLevel++;
                 drawMenu();
             }
@@ -129,7 +131,12 @@ void splashScreen(void) {
                 waitpadup();
                 // Redraw scene
                 drawSplashDemo();
+            } else if (menuSelection == 0) {
+                // NEW - start from level 1
+                startLevel = 1;
+                break;
             } else {
+                // LEVEL - use selected level
                 break;
             }
         }
