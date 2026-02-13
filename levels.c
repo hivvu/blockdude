@@ -1,5 +1,6 @@
 #include "levels.h"
 #include "logic.h"
+#include "audio.h"
 #include "splashscreen.h"
 #include <string.h>
 
@@ -73,6 +74,8 @@ void runLevel(const LevelData* level, UINT8 nextLevelNum) {
         updateSwitches();
         wait_vbl_done();
     }
+
+    sfx_level_complete();
 
     // Reset scroll for next level
     if (level->scrollYOffset > 0) {

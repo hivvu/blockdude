@@ -82,6 +82,84 @@ void play_note(uint8_t channel, uint8_t note, uint8_t length) {
     delay(length);
 }
 
+// Short blip for menu navigation (Pulse 1, ~C5, fast decay)
+void sfx_menu_move(void) {
+    NR10_REG = 0x00;  // No sweep
+    NR11_REG = 0x80;  // 50% duty cycle, no length
+    NR12_REG = 0xA1;  // Volume 10, decay down, speed 1
+    NR13_REG = 0x00;  // Frequency low byte (~C5)
+    NR14_REG = 0x85;  // Trigger + frequency high bits
+}
+
+// Sweep sound for level number change (Pulse 1, ~G5, sweep up)
+void sfx_level_change(void) {
+    NR10_REG = 0x15;  // Sweep up, period 1, shift 5
+    NR11_REG = 0x40;  // 25% duty cycle, no length
+    NR12_REG = 0xB2;  // Volume 11, decay down, speed 2
+    NR13_REG = 0x50;  // Frequency low byte (~G5)
+    NR14_REG = 0x86;  // Trigger + frequency high bits
+}
+
+// Higher-pitched confirm beep (Pulse 1, ~G5, no sweep, clean tone)
+void sfx_menu_confirm(void) {
+    NR10_REG = 0x00;  // No sweep
+    NR11_REG = 0x80;  // 50% duty cycle, no length
+    NR12_REG = 0xF2;  // Volume 15, decay down, speed 2
+    NR13_REG = 0x50;  // Frequency low byte (~G5)
+    NR14_REG = 0x86;  // Trigger + frequency high bits
+}
+
+// Subtle step tick for player movement (Pulse 1, low volume, very fast decay)
+void sfx_player_move(void) {
+    NR10_REG = 0x00;  // No sweep
+    NR11_REG = 0xC0;  // 75% duty cycle, no length
+    NR12_REG = 0x41;  // Volume 4, decay down, speed 1
+    NR13_REG = 0x00;  // Frequency low byte
+    NR14_REG = 0x84;  // Trigger + frequency high bits
+}
+
+// Quick ascending tone for picking up a box (Pulse 1, sweep up)
+void sfx_pickup(void) {
+    NR10_REG = 0x12;  // Sweep up, period 1, shift 2
+    NR11_REG = 0x80;  // 50% duty cycle, no length
+    NR12_REG = 0xA2;  // Volume 10, decay down, speed 2
+    NR13_REG = 0x00;  // Frequency low byte (~C5)
+    NR14_REG = 0x85;  // Trigger + frequency high bits
+}
+
+// Descending tone for dropping a box (Pulse 1, sweep down)
+void sfx_drop(void) {
+    NR10_REG = 0x1A;  // Sweep down, period 1, shift 2
+    NR11_REG = 0x80;  // 50% duty cycle, no length
+    NR12_REG = 0xA2;  // Volume 10, decay down, speed 2
+    NR13_REG = 0x50;  // Frequency low byte (~G5)
+    NR14_REG = 0x86;  // Trigger + frequency high bits
+}
+
+// Victory fanfare for level complete (3 ascending notes: C5 -> E5 -> G5)
+void sfx_level_complete(void) {
+    NR10_REG = 0x00;
+    NR11_REG = 0x80;  // 50% duty
+    NR12_REG = 0xF1;  // Volume 15, decay down, speed 1
+
+    // C5
+    NR13_REG = 0x00;
+    NR14_REG = 0x85;
+    delay(150);
+
+    // E5
+    NR12_REG = 0xF1;
+    NR13_REG = 0x50;
+    NR14_REG = 0x85;
+    delay(150);
+
+    // G5
+    NR12_REG = 0xF2;
+    NR13_REG = 0x50;
+    NR14_REG = 0x86;
+    delay(300);
+}
+
 // Main music loop
 void play_music() {
     uint8_t i = 0;

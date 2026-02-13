@@ -8,6 +8,7 @@
 
 // Include implementations
 #include "logic.c"
+#include "audio.c"
 #include "splashscreen.c"
 #include "levels.c"
 

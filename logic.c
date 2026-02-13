@@ -106,11 +106,14 @@ UBYTE showRestartDialog(unsigned char gameMap[], UINT8 mapWidth) {
 
         if (keys & J_LEFT) {
             selection = 0;
+            sfx_menu_move();
             performantDelay(8);
         } else if (keys & J_RIGHT) {
             selection = 1;
+            sfx_menu_move();
             performantDelay(8);
         } else if (keys & J_A || keys & J_START) {
+            sfx_menu_confirm();
             performantDelay(8);
             if (selection == 0) {
                 return TRUE;
@@ -173,6 +176,7 @@ void pickupBox(UINT8 targetX, UINT8 targetY, UINT8 playerX, unsigned char gameMa
         set_bkg_tiles(indexX, indexY, 1, 1, blankmap);
         set_bkg_tiles(playerX, indexY - 1, 1, 1, blockTile);
         holdingBlock = 1;
+        sfx_pickup();
     }
 }
 
@@ -208,6 +212,7 @@ void dropBox(UINT8 posX, UINT8 posY, unsigned char gameMap[], UINT8 mapWidth) {
     set_bkg_tiles(indexX, indexY, 1, 1, blockTile);
 
     holdingBlock = 0;
+    sfx_drop();
 }
 
 UBYTE resetLevel(void) {
@@ -315,18 +320,23 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth) {
 
     if (keys & J_LEFT) {
         moveHorizontal(DIR_LEFT, gameMap, mapWidth);
+        sfx_player_move();
     } else if (keys & J_RIGHT) {
         moveHorizontal(DIR_RIGHT, gameMap, mapWidth);
+        sfx_player_move();
     } else if (keys & J_UP) {
         INT8 direction = facingLeft ? DIR_LEFT : DIR_RIGHT;
         climb(direction, gameMap, mapWidth);
+        sfx_player_move();
     } else if ((keys & J_DOWN) || (keys & J_A)) {
         handlePickupDrop(gameMap, mapWidth);
+        performantDelay(10);
     } else if (keys & J_SELECT) {
+        sfx_level_change();
         if (showRestartDialog(gameMap, mapWidth)) {
             resetLevel();
         }
     }
 
-    performantDelay(10);
+    performantDelay(5);
 }
