@@ -41,7 +41,7 @@ void init(void) {
     facingLeft = TRUE;
     holdingBlock = 0;
 
-    set_bkg_data(0, 18, BackgroundTileSet);
+    set_bkg_data(0, 20, BackgroundTileSet);
     set_bkg_tiles(0, 0, BlankScreenWidth, BlankScreenHeight, BlankScreen);
 
     set_sprite_data(0, 6, BackgroundTileSet);
@@ -238,11 +238,13 @@ static void moveHorizontal(INT8 direction, unsigned char gameMap[], UINT8 mapWid
 
     // Check if holding block and can pass through tight spaces
     if (holdingBlock == 1 && checkCollision(nextX, player[1] - TILE_SIZE, gameMap, mapWidth) == FALSE) {
+        sfx_bump();
         return;
     }
 
     // Check if player can move
     if (checkCollision(nextX, player[1], gameMap, mapWidth)) {
+        sfx_player_move();
         // Remove block from current position if holding one
         if (holdingBlock == 1) {
             set_bkg_tiles(checkTileIndexX(player[0]), checkTileIndexY(player[1]) - 1, 1, 1, blankmap);
@@ -273,6 +275,8 @@ static void moveHorizontal(INT8 direction, unsigned char gameMap[], UINT8 mapWid
             player[0] = posX;
             blockFollowPlayer(player[0], player[1]);
         }
+    } else {
+        sfx_bump();
     }
 }
 
@@ -294,6 +298,9 @@ static void climb(INT8 direction, unsigned char gameMap[], UINT8 mapWidth) {
 
         player[0] = nextX;
         player[1] = nextY;
+        sfx_player_move();
+    } else {
+        sfx_bump();
     }
 }
 
@@ -311,6 +318,8 @@ static void handlePickupDrop(unsigned char gameMap[], UINT8 mapWidth) {
             } else {
                 dropBox(targetX, player[1] - TILE_SIZE, gameMap, mapWidth);
             }
+        } else {
+            sfx_bump();
         }
     }
 }
@@ -320,14 +329,11 @@ void checkInput(unsigned char gameMap[], UINT8 mapWidth) {
 
     if (keys & J_LEFT) {
         moveHorizontal(DIR_LEFT, gameMap, mapWidth);
-        sfx_player_move();
     } else if (keys & J_RIGHT) {
         moveHorizontal(DIR_RIGHT, gameMap, mapWidth);
-        sfx_player_move();
     } else if (keys & J_UP) {
         INT8 direction = facingLeft ? DIR_LEFT : DIR_RIGHT;
         climb(direction, gameMap, mapWidth);
-        sfx_player_move();
     } else if ((keys & J_DOWN) || (keys & J_A)) {
         handlePickupDrop(gameMap, mapWidth);
         performantDelay(10);

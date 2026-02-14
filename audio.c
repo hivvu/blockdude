@@ -136,6 +136,15 @@ void sfx_drop(void) {
     NR14_REG = 0x86;  // Trigger + frequency high bits
 }
 
+// Short low thud for wall collision or failed drop (Pulse 1, low pitch, fast decay)
+void sfx_bump(void) {
+    NR10_REG = 0x00;  // No sweep
+    NR11_REG = 0xC0;  // 75% duty cycle
+    NR12_REG = 0x51;  // Volume 5, decay down, speed 1
+    NR13_REG = 0x30;  // Frequency low byte (low pitch)
+    NR14_REG = 0x83;  // Trigger + frequency high bits
+}
+
 // Victory fanfare for level complete (3 ascending notes: C5 -> E5 -> G5)
 void sfx_level_complete(void) {
     NR10_REG = 0x00;

@@ -9,6 +9,7 @@ void sfx_menu_confirm(void);
 void sfx_player_move(void);
 void sfx_pickup(void);
 void sfx_drop(void);
+void sfx_bump(void);
 void sfx_level_complete(void);
 
 #endif
